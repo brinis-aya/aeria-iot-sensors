@@ -100,10 +100,18 @@ mvn verify      # 16 tests: validation rules, simulator realism, ingestion + RES
 ## Hardening for production
 
 The compose file is for development: the broker accepts anonymous clients but is only published on
-`127.0.0.1`. For a real deployment: TLS listener on 8883, `allow_anonymous false`, one password per
-sensor (`mosquitto_passwd`), and the ACL in [`mosquitto/acl`](mosquitto/acl) that lets each sensor write
-only its own topic. These points are tracked in the risk analysis of the
-[security module](https://github.com/brinis-aya/aeria-security).
+`127.0.0.1`. The security audit (module 5, finding F2) showed what that means: anyone who reaches the broker can
+publish readings in the name of any sensor. Production uses
+[`mosquitto/mosquitto.prod.conf`](mosquitto/mosquitto.prod.conf):
+
+- `allow_anonymous false` and one account per sensor (`mosquitto_passwd -b passwd LH-001 <secret>`);
+- the per-sensor ACL in [`mosquitto/acl`](mosquitto/acl): `LH-001` can only write `aeria/sensors/LH-001/measurements`;
+- TLS 1.2+ on 8883 (`ca.crt`, `server.crt`, `server.key` mounted in `/mosquitto/certs`), plain 1883 on loopback only;
+- secret files owned by the `mosquitto` user, mode `0700`.
+
+[`mosquitto/test-prod-acl.sh`](mosquitto/test-prod-acl.sh) checks it inside the running broker container
+(anonymous refused, wrong password refused, own topic accepted, spoofed topic dropped: 4/4 pass). See the
+[security module](https://github.com/brinis-aya/aeria-security) for the full audit.
 
 ## Report
 
