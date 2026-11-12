@@ -1,0 +1,10 @@
+# Anonymous clients (development only) may use the sensors tree and nothing else.
+topic readwrite aeria/sensors/#
+
+# Production: one account per sensor, allowed to write only its own topic.
+# The pattern %u is replaced by the MQTT username (= the sensor id).
+pattern write aeria/sensors/%u/measurements
+
+# The ingestion service reads everything under the sensors tree.
+user aeria-ingest
+topic read aeria/sensors/#

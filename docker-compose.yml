@@ -1,0 +1,60 @@
+name: aeria
+
+# Local stack for module 1. The PostgreSQL service is shared with the data pipeline
+# (module 2) and the back-office (module 4), which connect to the same "aeria" database.
+services:
+  mosquitto:
+    build: ./mosquitto
+    ports:
+      - "127.0.0.1:1883:1883"
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: aeria
+      POSTGRES_USER: aeria
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-aeria}
+    ports:
+      - "127.0.0.1:${PG_PORT:-5440}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aeria -d aeria"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ingest:
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/aeria
+      DB_PASSWORD: ${DB_PASSWORD:-aeria}
+      MQTT_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: aeria-ingest
+      SIMULATOR_ENABLED: "false"
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres: { condition: service_healthy }
+      mosquitto: { condition: service_started }
+    restart: unless-stopped
+
+  # Same image, other role: publishes simulated readings instead of storing them.
+  simulator:
+    build: .
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/aeria
+      DB_PASSWORD: ${DB_PASSWORD:-aeria}
+      MQTT_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: aeria-simulator
+      INGEST_ENABLED: "false"
+      SIMULATOR_ENABLED: "true"
+      SIMULATOR_PERIOD_MS: "10000"
+      PORT: "8082"
+    depends_on:
+      ingest: { condition: service_started }
+    restart: unless-stopped
+
+volumes:
+  pgdata:

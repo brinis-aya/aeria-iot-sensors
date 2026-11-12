@@ -1,0 +1,53 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: aeria-iot-sensors
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5440/aeria}
+    username: ${DB_USER:aeria}
+    password: ${DB_PASSWORD:aeria}
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate.jdbc.batch_size: 500
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+aeria:
+  mqtt:
+    enabled: ${MQTT_ENABLED:true}
+    broker-url: ${MQTT_URL:tcp://127.0.0.1:1883}
+    client-id: ${MQTT_CLIENT_ID:aeria-ingest}
+    username: ${MQTT_USER:}
+    password: ${MQTT_PASSWORD:}
+    subscribe-topic: aeria/sensors/+/measurements
+    topic-prefix: aeria/sensors
+    qos: 1
+    ingest-enabled: ${INGEST_ENABLED:true}
+  simulator:
+    enabled: ${SIMULATOR_ENABLED:false}
+    period-ms: ${SIMULATOR_PERIOD_MS:10000}
+    fault-rate: 0.02
+    seed: 42
+    # Six simulated sensors around Le Havre (Normandy): the city has a large port and an
+    # industrial zone, which gives contrasted pollution profiles.
+    sensors:
+      - { id: LH-001, name: "Hôtel de Ville",        latitude: 49.4938, longitude: 0.1077, environment: urban }
+      - { id: LH-002, name: "Boulevard de Strasbourg", latitude: 49.4920, longitude: 0.1180, environment: traffic }
+      - { id: LH-003, name: "Port - Quai de l'Europe", latitude: 49.4750, longitude: 0.1300, environment: industrial }
+      - { id: LH-004, name: "Zone industrielle",       latitude: 49.4660, longitude: 0.1900, environment: industrial }
+      - { id: LH-005, name: "Sainte-Adresse",          latitude: 49.5090, longitude: 0.0840, environment: urban }
+      - { id: LH-006, name: "Montivilliers",           latitude: 49.5450, longitude: 0.1880, environment: rural }

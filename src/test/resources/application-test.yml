@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:aeria;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  flyway:
+    enabled: true
+
+aeria:
+  mqtt:
+    enabled: false
+  simulator:
+    enabled: false
